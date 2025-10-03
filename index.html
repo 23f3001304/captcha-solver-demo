@@ -61,6 +61,12 @@
             border-radius: 6px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
+        #countdownDisplay {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #555555;
+            font-weight: 500;
+        }
         .solver-input {
             margin-bottom: 30px;
         }
@@ -96,6 +102,7 @@
             font-size: 1.05em;
             font-weight: 500;
             transition: background-color 0.3s ease, transform 0.2s ease;
+            margin: 5px; /* Added margin for refresh button */
         }
         button:hover {
             background-color: #0056b3;
@@ -129,12 +136,14 @@
         <div class="captcha-display">
             <p>Captcha Image URL: <span id="captchaUrlDisplay">Loading...</span></p>
             <img id="captchaImage" src="" alt="Captcha Image">
+            <div id="countdownDisplay">Captcha refreshes in <span id="timeRemaining">15</span> seconds</div>
+            <button id="refreshButton">Refresh Captcha</button>
         </div>
 
         <div class="solver-input">
             <label for="captchaInput">Enter the text you see in the captcha:</label>
             <input type="text" id="captchaInput" placeholder="Your solution here">
-            <button id="solveButton">Submit Captcha</button>
+            <button id="submitButton">Submit Captcha</button>
         </div>
 
         <div class="result-display">
@@ -147,26 +156,64 @@
             const captchaImageElement = document.getElementById('captchaImage');
             const captchaUrlDisplayElement = document.getElementById('captchaUrlDisplay');
             const captchaInput = document.getElementById('captchaInput');
-            const solveButton = document.getElementById('solveButton');
+            const submitButton = document.getElementById('submitButton'); // Changed from solveButton to submitButton
             const solvedTextDisplay = document.getElementById('solvedTextDisplay');
+            const timeRemainingElement = document.getElementById('timeRemaining');
+            const refreshButton = document.getElementById('refreshButton');
+
+            let countdownInterval;
+            const REFRESH_TIME = 15; // seconds
+            let currentCaptchaUrl = '';
 
             // Function to parse URL parameters
             const urlParams = new URLSearchParams(window.location.search);
-            const imageUrlParam = urlParams.get('url');
+            const initialImageUrlParam = urlParams.get('url');
 
-            // Set captcha image and URL display
-            if (imageUrlParam) {
-                captchaImageElement.src = imageUrlParam;
-                captchaUrlDisplayElement.textContent = imageUrlParam;
-            } else {
-                // Default placeholder captcha image from a free source
-                const defaultCaptchaUrl = 'https://dummyimage.com/300x100/007bff/ffffff.png&text=CAPTCHA';
-                captchaImageElement.src = defaultCaptchaUrl;
-                captchaUrlDisplayElement.textContent = defaultCaptchaUrl;
+            // Function to load/refresh captcha image
+            function loadCaptchaImage() {
+                // Clear any previous solution display
+                solvedTextDisplay.textContent = 'Awaiting input...';
+                solvedTextDisplay.style.color = '#28a745'; // Reset to default success color or neutral
+
+                // If an initial URL was provided, use it, otherwise use a placeholder
+                if (initialImageUrlParam && !currentCaptchaUrl) { // Only use initial param once on load
+                    currentCaptchaUrl = initialImageUrlParam;
+                } else {
+                    // Generate a new unique dummy image URL to force refresh, using current timestamp
+                    // This is a placeholder for a real captcha API call.
+                    const dummyUrl = `https://dummyimage.com/300x100/007bff/ffffff.png&text=CAPTCHA_${Date.now()}`;
+                    currentCaptchaUrl = dummyUrl;
+                }
+
+                captchaImageElement.src = currentCaptchaUrl;
+                captchaUrlDisplayElement.textContent = currentCaptchaUrl;
+                captchaInput.value = ''; // Clear input field
+
+                startCountdown();
             }
 
-            // Handle "Solve Captcha" button click
-            solveButton.addEventListener('click', () => {
+            // Function to start the countdown timer
+            function startCountdown() {
+                clearInterval(countdownInterval); // Clear any existing interval
+                let timeLeft = REFRESH_TIME;
+                timeRemainingElement.textContent = timeLeft;
+
+                countdownInterval = setInterval(() => {
+                    timeLeft--;
+                    timeRemainingElement.textContent = timeLeft;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(countdownInterval);
+                        loadCaptchaImage(); // Auto-refresh captcha
+                    }
+                }, 1000);
+            }
+
+            // Initial captcha load
+            loadCaptchaImage();
+
+            // Handle "Submit Captcha" button click
+            submitButton.addEventListener('click', () => {
                 const inputText = captchaInput.value.trim();
 
                 if (inputText === '') {
@@ -175,20 +222,26 @@
                     return;
                 }
 
-                solvedTextDisplay.textContent = 'Processing...';
+                // Immediately show processing feedback
+                solvedTextDisplay.textContent = 'Verifying...';
                 solvedTextDisplay.style.color = '#ffc107'; // Yellow for processing
 
-                // Simulate the 15-second delay for "solving"
+                // Simulate the 15-second delay for "solving" (as per requirement)
                 setTimeout(() => {
-                    solvedTextDisplay.textContent = inputText;
+                    solvedTextDisplay.textContent = inputText; // Display the entered text as "solved"
                     solvedTextDisplay.style.color = '#28a745'; // Green for success
-                }, 15000); // 15 seconds delay
+                }, REFRESH_TIME * 1000); // Use the same refresh time for consistency
+            });
+
+            // Handle "Refresh Captcha" button click
+            refreshButton.addEventListener('click', () => {
+                loadCaptchaImage();
             });
 
             // Allow pressing Enter key to submit
             captchaInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
-                    solveButton.click();
+                    submitButton.click();
                 }
             });
         });
