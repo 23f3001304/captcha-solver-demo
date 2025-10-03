@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captcha Solver Web App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #app {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid #e0e0e0;
+        }
+        h1 {
+            color: #333333;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+        .captcha-display {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+        }
+        .captcha-display p {
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #666666;
+            line-height: 1.4;
+        }
+        #captchaUrlDisplay {
+            font-weight: bold;
+            color: #007bff;
+            word-break: break-all;
+            display: block;
+            margin-top: 5px;
+        }
+        #captchaImage {
+            display: block;
+            margin: 15px auto 0 auto;
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #cccccc;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .solver-input {
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            margin-bottom: 12px;
+            color: #555555;
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+        input[type="text"] {
+            width: calc(100% - 24px);
+            padding: 12px;
+            margin-bottom: 18px;
+            border: 1px solid #dddddd;
+            border-radius: 6px;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        input[type="text"]:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .result-display {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px dashed #e0e0e0;
+        }
+        .result-display p {
+            color: #333333;
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+        #solvedTextDisplay {
+            color: #28a745;
+            font-weight: bold;
+            margin-left: 5px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Captcha Solver</h1>
+
+        <div class="captcha-display">
+            <p>Captcha Image URL: <span id="captchaUrlDisplay">Loading...</span></p>
+            <img id="captchaImage" src="" alt="Captcha Image">
+        </div>
+
+        <div class="solver-input">
+            <label for="captchaInput">Enter the text you see in the captcha:</label>
+            <input type="text" id="captchaInput" placeholder="Your solution here">
+            <button id="solveButton">Submit Captcha</button>
+        </div>
+
+        <div class="result-display">
+            <p>Solved Text: <span id="solvedTextDisplay">Awaiting input...</span></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const captchaImageElement = document.getElementById('captchaImage');
+            const captchaUrlDisplayElement = document.getElementById('captchaUrlDisplay');
+            const captchaInput = document.getElementById('captchaInput');
+            const solveButton = document.getElementById('solveButton');
+            const solvedTextDisplay = document.getElementById('solvedTextDisplay');
+
+            // Function to parse URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const imageUrlParam = urlParams.get('url');
+
+            // Set captcha image and URL display
+            if (imageUrlParam) {
+                captchaImageElement.src = imageUrlParam;
+                captchaUrlDisplayElement.textContent = imageUrlParam;
+            } else {
+                // Default placeholder captcha image from a free source
+                const defaultCaptchaUrl = 'https://dummyimage.com/300x100/007bff/ffffff.png&text=CAPTCHA';
+                captchaImageElement.src = defaultCaptchaUrl;
+                captchaUrlDisplayElement.textContent = defaultCaptchaUrl;
+            }
+
+            // Handle "Solve Captcha" button click
+            solveButton.addEventListener('click', () => {
+                const inputText = captchaInput.value.trim();
+
+                if (inputText === '') {
+                    solvedTextDisplay.textContent = 'Please enter text.';
+                    solvedTextDisplay.style.color = '#dc3545'; // Red for error
+                    return;
+                }
+
+                solvedTextDisplay.textContent = 'Processing...';
+                solvedTextDisplay.style.color = '#ffc107'; // Yellow for processing
+
+                // Simulate the 15-second delay for "solving"
+                setTimeout(() => {
+                    solvedTextDisplay.textContent = inputText;
+                    solvedTextDisplay.style.color = '#28a745'; // Green for success
+                }, 15000); // 15 seconds delay
+            });
+
+            // Allow pressing Enter key to submit
+            captchaInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    solveButton.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
